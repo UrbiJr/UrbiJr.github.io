@@ -1,0 +1,71 @@
+name: Publish Consistency Guard
+
+on:
+  push:
+    paths:
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this site repo
+        uses: actions/checkout@v4
+        with:
+          path: site
+
+      - name: Checkout app source
+        uses: actions/checkout@v4
+        with:
+          repository: UrbiJr/consistency-guard
+          path: app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and export
+        working-directory: app
+        env:
+          GITHUB_PAGES: "true"
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run build
+
+      - name: Publish static files
+        run: |
+          mkdir -p site/consistency-guard
+          rsync -a --delete --exclude .git app/out/ site/consistency-guard/
+          touch site/.nojekyll
+          cat > site/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0;url=/consistency-guard/">
+            <link rel="canonical" href="/consistency-guard/">
+            <title>Consistency Guard</title>
+          </head>
+          <body>
+            <p><a href="/consistency-guard/">Open Consistency Guard</a></p>
+          </body>
+          </html>
+          HTML
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Publish Consistency Guard [skip ci]"
+          git push
