@@ -1,3 +1,4 @@
+# Rebuild when the app source on UrbiJr/consistency-guard changes.
 name: Publish Consistency Guard
 
 on:
