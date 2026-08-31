@@ -1,4 +1,5 @@
 # Rebuild when the app source on UrbiJr/consistency-guard changes.
+# rebuild 2026-08-31 manual SL/TP
 name: Publish Consistency Guard
 
 on:
